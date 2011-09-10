@@ -66,13 +66,11 @@ Array.min = function( array ){
  * Connected-component labeling (aka blob extraction)
  * Using Algorithm developed in "A linear-time component labeling algorithm using contour tracing technique"
  * @param data
- * @param rect
+ * @param width
+ * @param height
  * @returns {BlobExtraction}
  */
-function BlobExtraction(data, rect) {
-
-	var w = rect.width;
-	var h = rect.height;
+function BlobExtraction(data, w, h) {
 	var max = w * h;
 
 	//These are constants
@@ -93,14 +91,14 @@ function BlobExtraction(data, rect) {
 
 	// We change the border to be white. We could add a pixel around
 	// but we are lazy and want to do this in place.
-	// Set the outer 2 rows/cols to min
+	// Set the outer rows/cols to min
 	data.memset(0,         w, BACKGROUND); // Top
-	data.memset(w * (h-1), w, BACKGROUND); // Bottom 2
+	data.memset(w * (h-1), w, BACKGROUND); // Bottom
 
 	for (var y = 1; y < h-1; y++) {
 		var offset = y * w;
-		data[offset        ] = BACKGROUND;
-		data[offset + w - 1] = BACKGROUND;
+		data[offset        ] = BACKGROUND; // Left
+		data[offset + w - 1] = BACKGROUND; // Right
 	}
 
 	// Set labels to zeros
@@ -236,14 +234,15 @@ function BlobExtraction(data, rect) {
  * Returns an array of each blob's bounds
  * TODO do this with the BlobExtraction stage
  * @param label
- * @param rect
+ * @param width
+ * @param height
  */
-function BlobBounds(label, rect) {
+function BlobBounds(label, width, height) {
 	var blob = [];
 
 	var offset = 0;
-	for (var y = 0; y < rect.height; y++) {
-		for (var x = 0; x < rect.width; x++) {
+	for (var y = 0; y < height; y++) {
+		for (var x = 0; x < width; x++) {
 			var l = label[offset++];
 
 			if (l <= 0)
@@ -280,15 +279,16 @@ function BlobBounds(label, rect) {
 
 /**
  * Draws a picture with each blob coloured
- * @param label
- * @param rect
  * @param dest RGBA
+ * @param width
+ * @param height
+ * @param label
  */
-function BlobColouring(label, rect, dest) {
+function BlobColouring(dest, width, height, labels) {
 	var max = rect.width * rect.height;
 	var colors = [];
 
-	var maxcolors = Array.max(label);
+	var maxcolors = Array.max(labels);
 	var maxcolors2 = maxcolors/2;
 
 	// Create a simple color scale (I could do this in two loops but I'm lazy)
@@ -303,7 +303,7 @@ function BlobColouring(label, rect, dest) {
 	var offset = max - 1;
 	var destOffset = offset * 4;
 	do {
-		var l = label[offset];
+		var l = labels[offset];
 
 		var color = l > 0 ? colors[ l ] : [0,0,0];
 		dest[destOffset    ] = color[0];
